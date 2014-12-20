@@ -67,6 +67,11 @@ class TerminalActivity(activity.Activity):
         self.connect('key-press-event', self.__key_press_cb)
 
         self.max_participants = 1
+        self.theme_state = "light"
+        self.theme_colors = {"light": {'fg_color': '#000000',
+                                       'bg_color': '#FFFFFF'},
+                             "dark": {'fg_color': '#FFFFFF',
+                                      'bg_color': '#000000'}}
 
         toolbar_box = ToolbarBox()
 
@@ -165,6 +170,13 @@ class TerminalActivity(activity.Activity):
         fullscreen_button.connect('clicked', self.__fullscreen_cb)
         view_toolbar.insert(fullscreen_button, -1)
         fullscreen_button.show()
+
+        self.theme_toggler = ToolButton('dark-theme')
+        self.theme_toggler.connect('clicked', self._toggled_theme)
+        self.theme_toggler.set_tooltip('Switch to Dark Theme')
+        view_toolbar.insert(self.theme_toggler, -1)
+        self.theme_toggler.show()
+
         return view_toolbar
 
     def _zoom(self, step):
@@ -478,8 +490,9 @@ class TerminalActivity(activity.Activity):
         font = self._get_conf(conf, 'font', 'Monospace')
         vt.set_font(Pango.FontDescription(font))
 
-        fg_color = self._get_conf(conf, 'fg_color', '#000000')
-        bg_color = self._get_conf(conf, 'bg_color', '#FFFFFF')
+        fg_color = self.theme_colors[self.theme_state]['fg_color']
+        bg_color = self.theme_colors[self.theme_state]['bg_color']
+
         vt.set_colors(Gdk.color_parse(fg_color),
                       Gdk.color_parse(bg_color), [])
 
@@ -507,3 +520,20 @@ class TerminalActivity(activity.Activity):
         vt.set_visible_bell(visible_bell)
 
         conf.write(open(conf_file, 'w'))
+
+    def _toggled_theme(self, button):
+        if self.theme_state == "dark":
+            self.theme_state = "light"
+            self.theme_toggler.set_icon_name('dark-theme')
+            self.theme_toggler.set_tooltip('Switch to Dark Theme')
+        elif self.theme_state == "light":
+            self.theme_state = "dark"
+            self.theme_toggler.set_icon_name('light-theme')
+            self.theme_toggler.set_tooltip('Switch to Light Theme')
+
+        fg_color = self.theme_colors[self.theme_state]['fg_color']
+        bg_color = self.theme_colors[self.theme_state]['bg_color']
+        for page in range(self._notebook.get_n_pages()):
+            vt = self._notebook.get_nth_page(page).vt
+            vt.set_colors(Gdk.color_parse(fg_color),
+                          Gdk.color_parse(bg_color), [])
